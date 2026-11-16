@@ -1837,7 +1837,7 @@ document.getElementById('suggestionForm').addEventListener('submit',e=>{
     let msg=document.getElementById('message').value;
     let formattedText=`*ELITE AI COGNITIVE INSTANCE - REPORT*\n\n• *Telemetry Class:* ${cat}\n• *Structural Report:* ${msg}`;
     let encodedText=encodeURIComponent(formattedText);
-    let phoneNumber="2348108391083";
+    let phoneNumber="";
     let whatsappUrl=`https://wa.me/${phoneNumber}?text=${encodedText}`;
     window.open(whatsappUrl,'_blank');
     toast('Redirecting to WhatsApp secure portal...');
