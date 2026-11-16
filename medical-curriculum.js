@@ -104,11 +104,32 @@
     "Rheumatology","Clinical Genetics","Infectious Disease Medicine","Maternal-Fetal Medicine","Reproductive Medicine",
     "Neonatology","Adolescent Medicine","Child and Adolescent Psychiatry","Gynaecological Oncology"
   ];
-  const normalise = s => String(s || "").trim().toLowerCase().replace(/\s+/g," ");
+  TOPICS.Biology = TOPICS["General Biology"];
+  TOPICS.Chemistry = TOPICS["General Chemistry"];
+  TOPICS.Physics = TOPICS["General Physics"];
+  TOPICS.Anatomy = [...(TOPICS["Gross Anatomy"]||[]),...(TOPICS["Systemic Anatomy"]||[])];
+  TOPICS.Physiology = TOPICS["Human Physiology"];
+  TOPICS.Biochemistry = TOPICS["General Biochemistry"];
+  TOPICS.Microbiology = TOPICS["Medical Microbiology"];
+  TOPICS.Pathology = TOPICS["General Pathology"];
+  TOPICS.Pharmacology = TOPICS["General Pharmacology"];
+  TOPICS["Clinical Parasitology"] = TOPICS["Medical Parasitology"] || TOPICS.Parasitology;
+  const normalise = s => String(s || "").trim().toLowerCase().replace(/\\s+/g," ");
   const topicsFor = course => TOPICS[course] || ["Foundations and terminology","Normal structure and function","Core mechanisms and principles","Common disorders and pathophysiology","Investigations and interpretation","Clinical and applied correlations","Prevention and public health","Revision and integration"];
   function coursesForLevel(level) {
     return (LEVELS[String(level)] || []).slice();
   }
+  const TOPIC_BANK = {};
+  Object.entries(LEVELS).forEach(([level, courses]) => {
+    courses.forEach(course => {
+      if (!TOPIC_BANK[course]) TOPIC_BANK[course] = {};
+      TOPIC_BANK[course][level] = topicsFor(course).slice();
+    });
+  });
+  EXTRA.forEach(course => {
+    if (!TOPIC_BANK[course]) TOPIC_BANK[course] = { "200": topicsFor(course).slice() };
+  });
+  function allCourses() { return Object.keys(TOPIC_BANK).sort((a,b)=>a.localeCompare(b)); }
   function allLevels() { return Object.keys(LEVELS); }
   function findCourse(name) {
     const wanted = normalise(name);
@@ -119,5 +140,5 @@
     const extra = EXTRA.find(x => normalise(x) === wanted);
     return extra ? { name: extra, level: "200" } : null;
   }
-  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, EXTRA, coursesForLevel, topicsFor, allLevels, findCourse });
+  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, TOPIC_BANK, EXTRA, coursesForLevel, allCourses, topicsFor, allLevels, findCourse });
 })(window);
