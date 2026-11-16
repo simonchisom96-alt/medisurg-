@@ -1,5 +1,5 @@
 /* ===== MERGED TOPIC BANK + SELECT TOPIC PICKER ===== */
-/* MediSurg — SS1–SS3 topic bank (clean names only). */
+/* MediSurg — 100–600 level medical topic bank. */
 (function(global){
 "use strict";
 const TOPIC_BANK = window.MediSurgCurriculum.TOPIC_BANK;
@@ -362,11 +362,12 @@ global.ESITopics = {
         html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px;font-size:11px;font-weight:800;color:var(--accent,#ffd700)">Recently Selected <button type="button" class="esi-dd-clear" style="border:0;background:transparent;color:#7ec8ff;font-size:10px;font-weight:800;cursor:pointer">Clear</button></div>`;
         selectedFirst(recent).filter(matches).forEach(t=>{ html += row(t); });
       }
-      ['SS1','SS2','SS3'].forEach(band=>{
-        const items = (group[band]||[]).filter(t=>matches(t));
-        if(!items.length) return;
-        html += `<div style="margin:10px 0 4px;font-size:11px;font-weight:800;color:var(--accent,#ffd700)">${band}</div>`;
-        items.forEach(t=>{ html += row(t); });
+      Object.keys(group).sort((a,b)=>Number(a)-Number(b)).forEach(level=>{
+        const exactLevel=q===level||q===level+" level";
+        const items=(group[level]||[]).filter(t=>exactLevel||matches(t));
+        if(!items.length)return;
+        html += `<div style="margin:10px 0 4px;font-size:11px;font-weight:800;color:var(--accent,#ffd700)">${level} LEVEL</div>`;
+        items.forEach(t=>{html+=row(t);});
       });
       html += `<div style="display:flex;gap:8px;margin-top:10px">
         <button type="button" class="esi-dd-cancel" style="flex:1;padding:11px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;background:transparent;border:1px solid var(--border,#1e4080);color:var(--text,#e6eeff)">Cancel</button>
