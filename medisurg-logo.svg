@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b2d59"/><stop offset="1" stop-color="#020818"/></linearGradient></defs><circle cx="64" cy="64" r="60" fill="url(#g)" stroke="#ffd700" stroke-width="5"/><path d="M56 25h16v31h31v16H72v31H56V72H25V56h31z" fill="#ffd700"/><circle cx="64" cy="64" r="6" fill="#020818"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="MediSurg medical emblem">
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eaf3ff"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123d78"/>
+      <stop offset="1" stop-color="#071d3d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="121" fill="url(#shield)" stroke="#174b8d" stroke-width="9"/>
+  <path d="M128 28 207 58v61c0 53-32 91-79 112-47-21-79-59-79-112V58z" fill="url(#blue)"/>
+  <path d="M115 67h26v48h48v26h-48v48h-26v-48H67v-26h48z" fill="#ef3340"/>
+  <path d="M76 202c17-13 30-17 45-17 13 0 22 5 31 5 11 0 21-6 31-17" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="128" cy="128" r="7" fill="#ffffff"/>
+</svg>
