@@ -742,19 +742,30 @@ function openDrawer(){renderDrawerItems('');$('drawer').style.display='flex'}
 function closeDrawer(){$('drawer').style.display='none';upd()}
 function renderDrawerItems(f){
     let c=$('subList');if(!c)return;c.innerHTML='';
-    ALL.filter(s=>s.toLowerCase().includes((f||'').toLowerCase())).forEach(s=>{
-        let d=document.createElement('div');
-        d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border2);font-size:11px;cursor:pointer;color:var(--text)';
-        if(sel.has(s))d.style.background='var(--card)';
-        let check=sel.has(s)?'✓':'+';
-        d.textContent=s+' '+check;
-        d.onclick=()=>{
-            if(sel.has(s)){ sel.delete(s); dropSubjectTopics(s); }
-            else { sel.add(s); ensureSubjectTopics(s); }
-            renderDrawerItems($('searchSub').value);updMini();
-        };
-        c.appendChild(d);
+    const q=String(f||'').trim().toLowerCase();
+    const levels=window.MediSurgCurriculum.allLevels();
+    levels.forEach(level=>{
+        const courses=window.MediSurgCurriculum.coursesForLevel(level)
+          .filter(s=>s.toLowerCase().includes(q));
+        if(!courses.length)return;
+        const head=document.createElement('div');
+        head.textContent=level+' LEVEL';
+        head.style.cssText='position:sticky;top:0;z-index:1;padding:9px 8px;margin-top:5px;background:var(--bg);border-bottom:1px solid var(--border);color:var(--accent);font-size:10px;font-weight:900;letter-spacing:.06em';
+        c.appendChild(head);
+        courses.forEach(s=>{
+            const d=document.createElement('div');
+            d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border2);font-size:11px;cursor:pointer;color:var(--text)';
+            if(sel.has(s))d.style.background='var(--card)';
+            d.textContent=s+' '+(sel.has(s)?'✓':'+');
+            d.onclick=()=>{
+                if(sel.has(s)){sel.delete(s);dropSubjectTopics(s);}
+                else{sel.add(s);ensureSubjectTopics(s);}
+                renderDrawerItems($('searchSub').value);updMini();
+            };
+            c.appendChild(d);
+        });
     });
+    if(!c.children.length)c.innerHTML='<div style="padding:14px;color:var(--muted);font-size:12px">No courses found. Try another search.</div>';
     $('count').textContent=sel.size;
 }
 function filterSubs(){renderDrawerItems($('searchSub').value)}
