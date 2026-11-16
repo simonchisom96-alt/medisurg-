@@ -6,7 +6,7 @@
 (function(){
   const core = document.createElement('script');
   // Versioned URL forces clients with a stale cached loader/service-worker response to fetch the public-lobby code visibility fix.
-  core.src = './multiplayer-core.js?v=20261116-arena-bootfix-2';
+  core.src = './multiplayer-core.js?v=20261116-arena-recovery-4';
   core.onload = function(){
     window.isUnlocked = function(){ return true; };
 
@@ -75,7 +75,7 @@
     }
   },25000);
   window.addEventListener('error',function(ev){
-    if(!/multiplayer-core\\.js/i.test(String(ev.filename||''))) return;
+    if(!/multiplayer-core\.js/i.test(String(ev.filename||''))) return;
     const splash=document.getElementById('loadingSplash');
     if(!splash || splash.style.display==='none') return;
     console.error('[Multiplayer] engine startup error:',ev.message);
