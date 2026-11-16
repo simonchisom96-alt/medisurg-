@@ -510,14 +510,14 @@ global.ESITopics = {
         let updates = {};
         questions.forEach(q=>{
             if(!q || !q.q || !Array.isArray(q.options)) return;
-            updates[hashQ(q.q)] = {subject:subject, topic:q.topic||'', q:q.q, options:q.options, answer:q.answer, explanation:q.explanation};
+            updates[hashQ(q.q)] = {subject:subject, topic:q.topic||'', q:q.q, options:q.options, answer:q.answer, explanation:q.explanation, imagePrompt:q.imagePrompt||null, qualityVersion:2};
         });
         if(!Object.keys(updates).length) return;
         qbDb.ref(path).update(updates).catch(e=>console.warn('[QuestionBank] save failed for "'+path+'":', e && e.message));
         questions.forEach(q=>{
             if(!q || !q.q || !q.topic || !window.ESITopics) return;
             let tPath = `medisurg/elite_subject_database/${subject}/${subMode}/${diff}/topic/${ESITopics.sanitizeKey(q.topic)}/question_bank`;
-            let one={}; one[hashQ(q.q)] = {subject:subject, topic:q.topic, q:q.q, options:q.options, answer:q.answer, explanation:q.explanation};
+            let one={}; one[hashQ(q.q)] = {subject:subject, topic:q.topic, q:q.q, options:q.options, answer:q.answer, explanation:q.explanation, imagePrompt:q.imagePrompt||null, qualityVersion:2};
             qbDb.ref(tPath).update(one).catch(()=>{});
         });
     }
@@ -2113,7 +2113,7 @@ async function fetchViaPuterMP(subject, subMode, diff, count, excludeHashSet, on
             ? ` NOTE: [${repeatedTopics.join(', ')}] were already assigned earlier — for those you MUST invent a completely different question angle, scenario, or formula than anything asked before; a repeated topic must NEVER produce a repeated question.`
             : '';
 
-        let prompt=`DETERMINISTIC JSON ENGINE. Batch ${ci+1}/${chunks.length} Seed:${randomSeed}. You MUST produce exactly ${chunkCount} questions. OUTPUT ONLY minified JSON array. SCHEMA: [{"subject":"${subject}","q":"question ending with ?","options":["...","...","...","..."],"answer":0,"explanation":"..."}] HARD RULES: 1) options=4 unique full sentences, MAXIMUM 12 words each, number of words in each option must range from 1-12 words, NO "A." "B)" prefix, NO single letters 2) answer=INTEGER 0-3 ONLY, 0=options[0] 1=options[1] 2=options[2] 3=options[3], NEVER string, NEVER 1-4 3) explanation MUST start with "The correct answer is " then a copy of options[answer] with its FIRST LETTER LOWERCASED (since it now continues a sentence instead of starting one) then " because" + 50+ words justification that proves why options[answer] is correct 4) SUBJECT:${subject} DIFFICULTY:${diff.toUpperCase()} MODE:${subMode.toUpperCase()} 5) ${topicFocus}${repeatWarning} 6) BANNED REPEAT QUESTIONS — never output anything resembling these previously-used questions:[${seenList}] 7) DIVERSITY: each question must test a different formula, edge case, or scenario, even within the same topic. 8) ANSWER POSITION: across these ${chunkCount} questions, spread the correct answer index roughly evenly across 0,1,2 and 3 in a random order — do NOT put the correct answer at index 0 for most questions. 9) CALCULATION ENFORCEMENT: for ANY assigned topic whose name contains the word "Calculations", the question is REJECTED unless it gives the student concrete numeric values (numbers, units, formulas to apply) and requires them to actually compute a numeric result to pick the right option — a purely definitional/conceptual question does NOT satisfy a "Calculations" topic, and all 4 options for that question must be plausible numeric results (not just one). 10) ARITHMETIC SELF-CHECK (MANDATORY): for every question that involves a calculation, work the calculation out step by step in your head FIRST, confirm which option index that final numeric result actually matches, and ONLY THEN set "answer" to that exact index — the number you restate inside "explanation" MUST be identical to the value shown in options[answer], never a different number. Before outputting, re-read your own explanation's arithmetic and verify it lands exactly on options[answer]; if it does not, redo the question. Getting the marked answer wrong, or writing an explanation whose math contradicts the marked option, is a critical failure — accuracy matters more than speed here. 11) CALCULATION DENSITY FOR ${subject.toUpperCase()}: ${subMode==='numeric' ? `this batch is NUMERIC mode — EXACTLY 90% of these ${chunkCount} questions must require an actual numeric calculation, only 10% may be pure conceptual/definitional.` : `this batch is standard/other mode — EXACTLY 40% of these ${chunkCount} questions may require a numeric calculation, the remaining 60% must test concepts, laws, definitions, or applied reasoning without heavy computation.`}`;
+        let prompt=`DETERMINISTIC JSON ENGINE. Batch ${ci+1}/${chunks.length} Seed:${randomSeed}. You MUST produce exactly ${chunkCount} questions. OUTPUT ONLY minified JSON array. SCHEMA: [{"subject":"${subject}","q":"question ending with ?","options":["...","...","...","..."],"answer":0,"explanation":"...","imagePrompt":null}] HARD RULES: 1) options=4 unique full sentences, MAXIMUM 12 words each, number of words in each option must range from 1-12 words, NO "A." "B)" prefix, NO single letters 2) answer=INTEGER 0-3 ONLY, 0=options[0] 1=options[1] 2=options[2] 3=options[3], NEVER string, NEVER 1-4 3) explanation MUST start with "The correct answer is " then a copy of options[answer] with its FIRST LETTER LOWERCASED (since it now continues a sentence instead of starting one) then " because" + 50+ words justification that proves why options[answer] is correct 4) SUBJECT:${subject} DIFFICULTY:${diff.toUpperCase()} MODE:${subMode.toUpperCase()} 4A) MEDICAL-SCHOOL DEPTH: Undergraduate MBBS level, not secondary-school recall. Course level: ${window.MediSurgCurriculum.findCourse(subject)?.level || '200'} year. Apply the selected difficulty at genuine medical-school depth. For 100-300 level foundational courses, test mechanisms, structure-function integration, interpretation of experiments and core biomedical reasoning. For 400-600 level clinical courses, use realistic concise patient vignettes, relevant examination findings, laboratory or imaging data where appropriate, and ask for the most defensible diagnosis, mechanism, investigation or principle. Prioritise application, analysis and evaluation over simple recall. Use plausible distractors based on common misconceptions, one unambiguously best answer, standard terminology and no fabricated reference ranges or unsupported treatment doses. 5) ${topicFocus}${repeatWarning} 6) BANNED REPEAT QUESTIONS — never output anything resembling these previously-used questions:[${seenList}] 6A) IMAGE PROMPT: If an anatomical structure, histology slide, radiograph, CT/MRI, ECG waveform, parasite, organism or laboratory setup would materially improve the question, provide a concise imagePrompt describing an accurate educational illustration; no embedded labels or text. Otherwise set imagePrompt to null. The question must remain answerable without the image. 7) DIVERSITY: each question must test a different formula, edge case, or scenario, even within the same topic. 8) ANSWER POSITION: across these ${chunkCount} questions, spread the correct answer index roughly evenly across 0,1,2 and 3 in a random order — do NOT put the correct answer at index 0 for most questions. 9) CALCULATION ENFORCEMENT: for ANY assigned topic whose name contains the word "Calculations", the question is REJECTED unless it gives the student concrete numeric values (numbers, units, formulas to apply) and requires them to actually compute a numeric result to pick the right option — a purely definitional/conceptual question does NOT satisfy a "Calculations" topic, and all 4 options for that question must be plausible numeric results (not just one). 10) ARITHMETIC SELF-CHECK (MANDATORY): for every question that involves a calculation, work the calculation out step by step in your head FIRST, confirm which option index that final numeric result actually matches, and ONLY THEN set "answer" to that exact index — the number you restate inside "explanation" MUST be identical to the value shown in options[answer], never a different number. Before outputting, re-read your own explanation's arithmetic and verify it lands exactly on options[answer]; if it does not, redo the question. Getting the marked answer wrong, or writing an explanation whose math contradicts the marked option, is a critical failure — accuracy matters more than speed here. 11) CALCULATION DENSITY FOR ${subject.toUpperCase()}: ${subMode==='numeric' ? `this batch is NUMERIC mode — EXACTLY 90% of these ${chunkCount} questions must require an actual numeric calculation, only 10% may be pure conceptual/definitional.` : `this batch is standard/other mode — EXACTLY 40% of these ${chunkCount} questions may require a numeric calculation, the remaining 60% must test concepts, laws, definitions, or applied reasoning without heavy computation.`}`;
 
         try{
             let res = await puter.ai.chat(prompt, {model: 'gpt-4o-mini'});
@@ -2130,6 +2130,8 @@ async function fetchViaPuterMP(subject, subMode, diff, count, excludeHashSet, on
                         q.topic = chunkTopics[result.length] || chunkTopics[0] || '';
                         q.options = q.options.map(o => String(o).replace(/^\s*[A-D]\s*[\.\)\-]\s*/i, '').trim()).slice(0, 4);
                         q.answer = parseInt(q.answer); if(isNaN(q.answer) || q.answer < 0 || q.answer > 3) q.answer = 0;
+                        q.qualityVersion = 2;
+                        q.imagePrompt = typeof q.imagePrompt === "string" ? q.imagePrompt.slice(0,500) : null;
                         if(q.answer >= q.options.length) q.answer = 0;
                         normalizeExplanationCasing(q);
                         let h = hashQ(q.q);
@@ -2192,7 +2194,8 @@ async function fetchQuestionsForMatch(settings, onStatus){
             let h=hashQ(q.q);
             if(mpSessionSeen.has(h)||localTaken.has(h)) continue;
             localTaken.add(h);
-            fromBank.push({subject:subject,topic:q.topic||'',q:q.q,options:q.options.slice(),answer:q.answer,explanation:q.explanation});
+            if(Number(q.qualityVersion||0)<2) continue;
+            fromBank.push({subject:subject,topic:q.topic||'',q:q.q,options:q.options.slice(),answer:q.answer,explanation:q.explanation,imagePrompt:q.imagePrompt||null,qualityVersion:2});
         }
         perSubjectQuestions[subject]=fromBank;
         let shortfall=quota-fromBank.length;
@@ -2219,6 +2222,7 @@ async function fetchQuestionsForMatch(settings, onStatus){
         if(extra && extra.length){Q=Q.concat(extra);qbSaveQuestions(subjForFill, subMode, diff, extra);}else break;
     }
     Q=Q.slice(0,totalRequested);
+    if(Q.length!==totalRequested) throw new Error('The AI question service returned '+Q.length+' of '+totalRequested+' required questions. Please retry when question generation is available.');
     Q.forEach(shuffleOptionsFisherYates);
     Q.forEach(normalizeExplanationCasing);
     Q.forEach(q=>mpSessionSeen.add(hashQ(q.q)));
@@ -3431,6 +3435,7 @@ async function beginMatchForRoom(roomId, settings, playersArr, teamNames, status
         if(currentScreen==='lobby'){ let b=$('hostStartBtn'); if(b) b.textContent=t; }
     };
     let questions = await fetchQuestionsForMatch(settings, onStatus);
+    if(!Array.isArray(questions) || !questions.length){ if(!target && splash) splash.style.display='none'; throw new Error('No questions were generated. Please retry.'); }
     if(!target && splash) splash.style.display='none';
     let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options}));
     let answerKey={};
