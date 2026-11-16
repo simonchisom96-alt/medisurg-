@@ -73,7 +73,7 @@ global.ESITopics = {
 */
 (function(global){
   'use strict';
-  const RECENT_KEY = 'esi_recent_topics_v1';
+  const RECENT_KEY = 'medisurg_recent_topics_v1';
   const MAX_RECENT = 12;
 
   function $(id){ return document.getElementById(id); }
@@ -530,8 +530,8 @@ const gateFirebaseConfig = window.MEDISURG_FIREBASE_CONFIG;
 const db = gateApp.database();
 
 const WHATSAPP_NUMBER = "";
-const UNLOCK_STORAGE_KEY = "elite_mp_unlock_v6";
-const UNLOCK_KEY_STORAGE = "elite_mp_key_v6";
+const UNLOCK_STORAGE_KEY = "medisurg_mp_unlock_v6";
+const UNLOCK_KEY_STORAGE = "medisurg_mp_key_v6";
 
 function gateToast(msg){
     const t = document.getElementById('gateToast');
@@ -731,7 +731,7 @@ const fmtTime=ts=>{if(!ts)return'';let d=new Date(ts);let now=new Date();let sam
 // ============================================================================================
 // ===== SOUND EFFECTS — small synthesized tones via WebAudio, no external audio files needed.
 // ============================================================================================
-let sfxCtx=null, sfxEnabled=(localStorage.getItem('medisurg/mp_sfx')!=='off');
+let sfxCtx=null, sfxEnabled=(localStorage.getItem('medisurg_mp_sfx')!=='off');
 function ensureSfxCtx(){ if(!sfxCtx){ try{ sfxCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return sfxCtx; }
 function playSfx(type){
     if(!sfxEnabled)return;
@@ -762,7 +762,7 @@ function playSfx(type){
 }
 function toggleSfx(){
     sfxEnabled=!sfxEnabled;
-    localStorage.setItem('medisurg/mp_sfx', sfxEnabled?'on':'off');
+    localStorage.setItem('medisurg_mp_sfx', sfxEnabled?'on':'off');
     let btn=$('sfxBtn'); if(btn) btn.textContent=sfxEnabled?'🔊':'🔇';
     if(sfxEnabled) playSfx('click');
 }
@@ -847,7 +847,7 @@ let pendingIncomingChallengeId=null;
 // Same storage key/shape as the single-player page, so a question flagged during a multiplayer
 // match shows up in the exact same "Flagged Questions" review bank there (same origin = shared
 // localStorage) instead of living in a separate, disconnected list.
-const FLAG_KEY='elite_flagged_v54';
+const FLAG_KEY='medisurg_flagged_v54';
 const getFlagged=()=>{try{let v=localStorage.getItem(FLAG_KEY);if(!v)return[];let p=JSON.parse(v);return Array.isArray(p)?p:[]}catch(e){localStorage.removeItem(FLAG_KEY);return[]}};
 const saveFlagged=a=>{try{localStorage.setItem(FLAG_KEY,JSON.stringify(a))}catch(e){}};
 function isMatchQFlagged(q){ if(!q)return false; return getFlagged().some(x=>x&&x.q===q.q); }
@@ -1365,9 +1365,9 @@ function toggleTheme(){
     let next=cur==='light'?'':'light';
     if(next)document.documentElement.setAttribute('data-theme','light');else document.documentElement.removeAttribute('data-theme');
     $('themeMeta').setAttribute('content', next?'#d7e2f0':'#04142f');
-    try{localStorage.setItem('esi_mp_theme', next);}catch(e){}
+    try{localStorage.setItem('medisurg_mp_theme', next);}catch(e){}
 }
-(function(){try{let t=localStorage.getItem('esi_mp_theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');$('themeMeta') && $('themeMeta').setAttribute('content','#d7e2f0');}}catch(e){}})();
+(function(){try{let t=localStorage.getItem('medisurg_mp_theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');$('themeMeta') && $('themeMeta').setAttribute('content','#d7e2f0');}}catch(e){}})();
 
 function toggleCalc(){let c=$('calc');c.style.display=c.style.display==='none'?'block':'none';}
 (function(){
