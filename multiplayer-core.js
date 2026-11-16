@@ -1476,15 +1476,33 @@ document.addEventListener('DOMContentLoaded', ()=>{
 function buildSubjectMini(containerId, setKey){
     let wrap=$(containerId);if(!wrap)return;
     let arr=[...selSubjects[setKey]];
-    let label = !arr.length ? 'Choose subject(s)' : (arr.length<=2 ? arr.join(', ') : arr.length+' subjects selected');
-    let isOpen = wrap.dataset.open==='1';
+    let label=!arr.length?'Choose course(s)':(arr.length<=2?arr.join(', '):arr.length+' courses selected');
+    let isOpen=wrap.dataset.open==='1';
     const wrapMap={qm:'qmTopicPickWrap',cr:'crTopicPickWrap',ch:'chTopicPickWrap',ct:'ctTopicPickWrap'};
     const tid=wrapMap[setKey];
-    wrap.innerHTML = `
-        <div id="${tid}" class="esi-topic-stack"></div>
-        <div class="subj-dd-btn" onclick="toggleSubjectDropdown('${containerId}')"><span>${esc(label)}</span><span class="subj-dd-arrow">${isOpen?'▴':'▾'}</span></div>
-        <div class="subj-dd-panel ${isOpen?'open':''}">${ALL.map(s=>`<label class="subj-dd-item"><input type="checkbox" ${selSubjects[setKey].has(s)?'checked':''} onchange="toggleSubj('${containerId}','${setKey}','${esc(s)}')"> ${esc(s)}</label>`).join('')}</div>`;
-    renderMpTopicButtons(setKey, tid);
+    const q=String(wrap.dataset.courseSearch||'').trim().toLowerCase();
+    const groups=window.MediSurgCurriculum.allLevels().map(level=>{
+      const courses=window.MediSurgCurriculum.coursesForLevel(level).filter(s=>s.toLowerCase().includes(q));
+      if(!courses.length)return '';
+      return `<div class="subj-level-head">${level} LEVEL</div>`+courses.map(s=>`<label class="subj-dd-item"><input type="checkbox" ${selSubjects[setKey].has(s)?'checked':''} onchange="toggleSubj('${containerId}','${setKey}','${esc(s)}')"> ${esc(s)}</label>`).join('');
+    }).join('')||'<div class="subj-empty">No matching courses found.</div>';
+    wrap.innerHTML=`
+      <div id="${tid}" class="esi-topic-stack"></div>
+      <div class="subj-dd-btn" onclick="toggleSubjectDropdown('${containerId}')"><span>${esc(label)}</span><span class="subj-dd-arrow">${isOpen?'▴':'▾'}</span></div>
+      <div class="subj-dd-panel ${isOpen?'open':''}">
+        <input class="subj-course-search" type="search" placeholder="Search courses: Anatomy, Physiology…" value="${esc(q)}" oninput="filterCourseDropdown('${containerId}','${setKey}',this.value)">
+        ${groups}
+      </div>`;
+    renderMpTopicButtons(setKey,tid);
+}
+function filterCourseDropdown(containerId,setKey,value){
+    const wrap=$(containerId);if(!wrap)return;
+    wrap.dataset.courseSearch=value||'';
+    const wasOpen=wrap.dataset.open==='1';
+    buildSubjectMini(containerId,setKey);
+    if(wasOpen){wrap.dataset.open='1';const p=wrap.querySelector('.subj-dd-panel');if(p)p.classList.add('open');}
+    const input=wrap.querySelector('.subj-course-search');
+    if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);}
 }
 function toggleSubjectDropdown(containerId){
     let wrap=$(containerId);if(!wrap)return;
@@ -3222,7 +3240,7 @@ async function startQuickMatchSearch(){
 
     // After ~15s with no exact match, start also considering close-but-not-identical settings
     // (same mode, any difficulty/subject) so people don't wait forever for a rare combo.
-    // After 32s with nobody at all, a backup opponent quietly fills the seat so the search
+    // After 32s with nobody at all, an explicitly labelled AI practice opponent fills the seat so the search
     // always resolves into a match instead of leaving the player stuck waiting.
     let widenedAt=null;
     let timeoutHandle=setInterval(async ()=>{
@@ -3562,10 +3580,10 @@ function renderTeamWaitingRoom(matchId, m){
 // human-named backup opponent — never written to mp_users, so it can never show up on the
 // leaderboard or receive a friend request; it only ever exists inside this one match.
 async function spawnBotMatch(settings){
-    let bot=pickBotIdentity();
+    let bot={name:'MediSurg AI',avatarEmoji:'🤖'};
     let botUid='bot_'+Math.random().toString(36).slice(2,11);
     let botAccuracy=computeBotAccuracy();
-    $('qmSearchStatus').innerHTML='🔎 Found an opponent, Questions loading pls wait!';
+    $('qmSearchStatus').innerHTML='🔎 AI practice opponent ready · generating questions…';
     let roomId=mdb.ref('medisurg/mp_rooms').push().key;
     let players={};
     players[botUid]={name:bot.name, ready:true, team:'A', uid:botUid};
@@ -5426,6 +5444,9 @@ async function openLB(){
 
     let now=curMonthMP();
     let key=MP_LB_PREFIX+now;
+    // Refresh this player's current monthly record before reading the public ranking.
+    // This avoids an apparently empty/stale leaderboard immediately after a match.
+    try{ await updateMPLeaderboard(); }catch(e){ console.warn('[MP-LB] pre-display sync failed',e); }
 
     // Last month's Top 3 uses the exact same canonical ranking engine.
     let hofHtml='';
