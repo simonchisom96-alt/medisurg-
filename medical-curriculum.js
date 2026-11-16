@@ -11,7 +11,7 @@
     ],
     "200": [
       "Gross Anatomy","Anatomy","Systemic Anatomy","Histology","Embryology","Neuroanatomy (Introduction)","Human Physiology","Physiology",
-      "General Biochemistry","Biochemistry","Medical Genetics","Medical Microbiology","Parasitology","Immunology","General Pathology","Pathology",
+      "General Biochemistry","Biochemistry","Medical Genetics","Medical Microbiology","Microbiology","Parasitology","Immunology","General Pathology","Pathology",
       "General Pharmacology","Pharmacology","Community Medicine","Behavioural Sciences","Medical Ethics and Law","Biostatistics and Research Methods",
       "Clinical Skills and Patient Communication","Nutrition and Metabolism","Introduction to Public Health"
     ],
