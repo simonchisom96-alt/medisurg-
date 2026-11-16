@@ -468,7 +468,7 @@ global.ESITopics = {
         mpApp = firebase.apps.find(app => app.name === 'medisurg') || firebase.initializeApp(firebaseConfig, 'medisurg');
     }catch(e){
         console.error('[Firebase] shared account app init failed:', e);
-        mpApp = firebase.app('esiCentralAccount');
+        mpApp = firebase.app('medisurg');
     }
     // All multiplayer records and authentication now use the same persistent
     // Firebase app identity used by the site-wide Google account layer.
