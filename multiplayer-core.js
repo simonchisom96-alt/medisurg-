@@ -949,19 +949,22 @@ function setupPresence(uid){
 
 async function initAfterAuth(uid){
     MY_UID=uid;
-    let splash=$('loadingSplash'); if(splash) splash.style.display='none';
-    setupPresence(uid);
-    // Run the one-hour room-expiry sweep immediately when a player comes online.
-    // This also covers stale private rooms; the periodic scan below remains a
-    // safety net while Multiplayer stays open.
-    cleanupInactiveRooms();
-    let snap=await mdb.ref('medisurg/mp_users/'+uid).get();
-    if(snap.exists()){
-        ME=snap.val();ME.uid=uid;
-        onProfileReady();
-        checkDailyStreak();
-    }else{
-        $('nameModal').classList.add('active');
+    try{
+        // Verify the authenticated profile can be read before removing the startup screen.
+        let snap=await mdb.ref('medisurg/mp_users/'+uid).get();
+        setupPresence(uid);
+        cleanupInactiveRooms();
+        if(snap.exists()){
+            ME=snap.val();ME.uid=uid;
+            onProfileReady();
+            checkDailyStreak();
+        }else{
+            $('nameModal').classList.add('active');
+        }
+        let splash=$('loadingSplash'); if(splash) splash.style.display='none';
+    }catch(error){
+        console.error('[Arena] player profile read failed:',error);
+        throw error;
     }
 }
 
@@ -6641,38 +6644,43 @@ function renderRRTable(t){
 // Users never see technical detail here — no error codes, hostnames, or backend/console talk.
 // Anything a developer needs to actually debug a connection problem goes to console.error only,
 // which is invisible to a normal user unless they deliberately open devtools.
+let arenaBootReady=false;
+function authFailureMessage(error){
+    const code=error&&error.code||'';
+    if(code==='auth/operation-not-allowed') return 'MediSurg sign-in is not enabled yet. Enable Anonymous sign-in in Firebase Authentication, then reload.';
+    if(code==='auth/network-request-failed') return 'The connection to MediSurg was interrupted. Check your internet connection and retry.';
+    if(code==='auth/unauthorized-domain') return 'This website address is not authorised in Firebase Authentication. Add the deployed domain to Firebase authorised domains.';
+    return 'MediSurg could not complete sign-in. Check your connection and Firebase Authentication settings, then retry.';
+}
 mauth.onAuthStateChanged(user=>{
     if(user){
-        initAfterAuth(user.uid);
+        initAfterAuth(user.uid).then(()=>{arenaBootReady=true;}).catch(e=>{
+            console.error('[Arena] profile initialisation failed:',e);
+            showLoadingRetry(e&&e.code==='PERMISSION_DENIED' ? 'You signed in, but MediSurg cannot read your player profile. Check Realtime Database rules for /medisurg/mp_users/.' : 'You signed in, but MediSurg could not finish loading your profile. Please retry.');
+        });
     }else{
         mauth.signInAnonymously().catch(e=>{
-            console.error('[Auth] anonymous sign-in failed:', e);
-            showLoadingRetry();
+            console.error('[Auth] anonymous sign-in failed:',e);
+            showLoadingRetry(authFailureMessage(e));
         });
     }
+},error=>{
+    console.error('[Auth] auth-state listener failed:',error);
+    showLoadingRetry(authFailureMessage(error));
 });
-
-function showLoadingRetry(){
-    let txt=$('loadingSplashText'), btn=$('loadingRetryBtn');
-    if(txt) txt.textContent="Having trouble connecting — check your internet connection.";
-    if(btn) btn.style.display='inline-block';
+function showLoadingRetry(message){
+    let txt=$('loadingSplashText'), btn=$('loadingRetryBtn'), splash=$('loadingSplash');
+    if(splash) splash.style.display='flex';
+    if(txt) txt.textContent=message||'MediSurg is taking longer than expected to connect. Please retry.';
+    if(btn){ btn.style.display='inline-block'; btn.textContent='Retry connection'; }
 }
-
-// If sign-in just never resolves (slow/blocked network), don't leave the screen looking frozen
-// forever with no explanation — but keep the message calm and generic either way.
 (function bootWatchdog(){
     let elapsed=0;
     let iv=setInterval(()=>{
-        if(MY_UID){ clearInterval(iv); return; }
+        if(arenaBootReady){ clearInterval(iv); return; }
         elapsed+=1000;
-        if(elapsed===10000){
-            let txt=$('loadingSplashText');
-            if(txt) txt.textContent='Still connecting… this is taking longer than usual.';
-        }
-        if(elapsed>=20000){
-            clearInterval(iv);
-            showLoadingRetry();
-        }
+        if(elapsed===10000){ let txt=$('loadingSplashText'); if(txt) txt.textContent='Still connecting to MediSurg… checking your player profile.'; }
+        if(elapsed>=25000){ clearInterval(iv); if(!arenaBootReady) showLoadingRetry('MediSurg could not finish connecting. Check your internet and Firebase setup, then retry.'); }
     },1000);
 })();
 
