@@ -104,6 +104,61 @@
     "Rheumatology","Clinical Genetics","Infectious Disease Medicine","Maternal-Fetal Medicine","Reproductive Medicine",
     "Neonatology","Adolescent Medicine","Child and Adolescent Psychiatry","Gynaecological Oncology"
   ];
+  // Hierarchical medical discipline maps. Inner keys become collapsible sub-disciplines.
+  const TOPIC_GROUPS = {
+    "Anatomy": {
+      "Gross Anatomy": ["Upper limb: pectoral region, axilla, arm, forearm and hand","Lower limb: gluteal region, thigh, leg and foot","Thorax: thoracic wall, pleura, lungs, mediastinum and heart","Abdomen: abdominal wall, peritoneum, foregut, midgut and hindgut","Pelvis and perineum: pelvic walls, floor, organs and perineal spaces","Head and neck: skull, face, scalp, triangles, oral cavity and pharynx","Back: vertebral column, spinal canal and back muscles"],
+      "Regional Anatomy": ["Pectoral and upper-limb regions","Thoracic region","Abdominal region","Pelvic region","Perineal region","Head and neck regions","Lower-limb regions","Back and vertebral regions"],
+      "Systemic Anatomy": ["Skeletal system","Muscular system","Cardiovascular system","Lymphatic system","Respiratory system","Digestive system","Urinary system","Reproductive system","Endocrine system","Nervous system","Special senses"],
+      "Neuroanatomy": ["Spinal cord and spinal nerves","Brainstem","Cerebellum","Diencephalon","Cerebral hemispheres","Basal nuclei","Limbic system","Meninges and ventricular system","Cranial nerves","Ascending and descending pathways","Autonomic nervous system","Cerebral blood supply"],
+      "Histology": ["Epithelial tissue","Connective tissue","Cartilage and bone","Muscle tissue","Nervous tissue","Blood and bone marrow","Cardiovascular histology","Respiratory histology","Gastrointestinal histology","Renal histology","Endocrine histology","Reproductive histology"],
+      "Embryology": ["Gametogenesis and fertilisation","Implantation and bilaminar disc","Gastrulation and germ layers","Neurulation and folding","Placenta and foetal membranes","Cardiovascular development","Respiratory development","Gastrointestinal development","Urogenital development","Musculoskeletal development","Head and neck development","Congenital anomalies"],
+      "Surface and Radiological Anatomy": ["Surface landmarks and palpation","Anatomical planes and sections","Plain radiograph anatomy","CT cross-sectional anatomy","MRI anatomy","Ultrasound anatomy","Applied and clinical anatomy"]
+    },
+    "Physiology": {
+      "Cellular and General Physiology": ["Cell membrane and transport","Resting membrane potential","Action potentials","Receptors and signal transduction","Homeostasis and feedback systems","Body fluids and compartments"],
+      "Blood and Immunophysiology": ["Plasma and plasma proteins","Erythrocytes and haemoglobin","Leukocytes","Platelets and haemostasis","Blood groups and transfusion principles"],
+      "Nerve and Muscle": ["Neuromuscular transmission","Skeletal muscle contraction","Smooth muscle","Cardiac muscle","Synaptic transmission"],
+      "Cardiovascular Physiology": ["Cardiac cycle","ECG principles","Cardiac output","Blood pressure regulation","Microcirculation","Haemodynamics","Exercise responses"],
+      "Respiratory Physiology": ["Lung volumes and capacities","Mechanics of breathing","Gas exchange","Oxygen and carbon dioxide transport","Ventilation-perfusion relationships","Control of respiration"],
+      "Renal Physiology": ["Renal blood flow and GFR","Tubular transport","Concentration and dilution of urine","Water and electrolyte balance","Acid-base regulation"],
+      "Gastrointestinal Physiology": ["GI motility","Gastrointestinal secretions","Digestion and absorption","Liver and biliary function","Gut hormones"],
+      "Endocrine and Reproductive Physiology": ["Hypothalamic-pituitary axes","Thyroid and adrenal function","Pancreatic hormones","Calcium and bone regulation","Male reproductive physiology","Female reproductive physiology","Pregnancy and lactation"],
+      "Neurophysiology and Special Senses": ["Sensory pathways","Motor control","Reflexes","Sleep and EEG","Autonomic regulation","Vision","Hearing and balance","Taste and smell"]
+    },
+    "Biochemistry": {
+      "Molecular Foundations": ["Water, pH and buffers","Amino acids and proteins","Carbohydrates","Lipids and membranes","Nucleotides and nucleic acids","Enzymes and coenzymes"],
+      "Metabolism": ["Glycolysis and gluconeogenesis","Glycogen metabolism","Citric acid cycle","Oxidative phosphorylation","Pentose phosphate pathway","Fatty-acid oxidation and synthesis","Cholesterol and lipoproteins","Amino-acid metabolism and urea cycle","Purine and pyrimidine metabolism"],
+      "Molecular and Cellular Biochemistry": ["DNA replication and repair","Transcription and RNA processing","Translation and protein synthesis","Gene regulation","Cell signalling","Apoptosis and cell cycle"],
+      "Nutrition and Micronutrients": ["Vitamins","Trace elements","Fed and fasting states","Energy balance","Protein-energy malnutrition"],
+      "Clinical Biochemistry": ["Glucose and diabetes investigations","Renal function tests","Liver function tests","Lipid profile","Cardiac biomarkers","Electrolytes and acid-base interpretation","Endocrine investigations","Quality control and reference intervals"]
+    },
+    "Parasitology": {
+      "Protozoology": ["Entamoeba species","Giardia and intestinal flagellates","Trichomonas","Plasmodium species and malaria","Trypanosomes","Leishmania","Toxoplasma","Cryptosporidium and opportunistic protozoa"],
+      "Helminthology": ["Ascaris and intestinal nematodes","Hookworms","Strongyloides","Enterobius","Trichuris","Filarial worms","Schistosoma species","Taenia species","Echinococcus","Liver and intestinal flukes"],
+      "Medical Entomology and Vectors": ["Mosquitoes and vector-borne disease","Ticks and mites","Tsetse flies","Sandflies","Blackflies","Fleas, lice and other arthropods"],
+      "Host–Parasite Biology": ["Life cycles and transmission","Host immune response","Pathogenesis and clinical features","Laboratory diagnosis","Epidemiology and prevention","Antiparasitic medicines and resistance"]
+    },
+    "Microbiology": {
+      "Bacteriology": ["Bacterial structure and classification","Gram-positive organisms","Gram-negative organisms","Mycobacteria","Spirochaetes","Anaerobic bacteria","Bacterial toxins and virulence"],
+      "Virology": ["Viral structure and replication","DNA viruses","RNA viruses","Hepatitis viruses","HIV and retroviruses","Respiratory viruses","Emerging and re-emerging viruses"],
+      "Medical Mycology": ["Yeasts","Moulds","Dimorphic fungi","Superficial and cutaneous mycoses","Systemic and opportunistic mycoses"],
+      "Laboratory and Applied Microbiology": ["Specimen collection and transport","Microscopy and staining","Culture and identification","Antimicrobial susceptibility","Sterilisation and disinfection","Infection prevention and control"]
+    },
+    "Pathology": {
+      "General Pathology": ["Cell injury and adaptation","Acute and chronic inflammation","Tissue repair and wound healing","Oedema, congestion and haemorrhage","Thrombosis, embolism and infarction","Shock","Immunopathology","Neoplasia","Genetic and environmental disease"],
+      "Systemic Pathology": ["Cardiovascular pathology","Respiratory pathology","Gastrointestinal pathology","Hepatobiliary and pancreatic pathology","Renal pathology","Endocrine pathology","Reproductive pathology","CNS pathology","Musculoskeletal pathology"],
+      "Laboratory Pathology": ["Histopathology","Cytopathology","Haematopathology","Chemical pathology","Immunopathology","Molecular diagnostics"]
+    },
+    "Pharmacology": {
+      "General Pharmacology": ["Pharmacokinetics and pharmacodynamics","Drug receptors and dose-response","Absorption, distribution, metabolism and excretion","Adverse drug reactions","Drug interactions","Pharmacogenetics","Clinical trials and rational prescribing"],
+      "Systemic Pharmacology": ["Autonomic drugs","Cardiovascular drugs","Renal drugs","Respiratory drugs","Gastrointestinal drugs","Endocrine drugs","CNS drugs","Analgesics and anaesthetics","Antimicrobials and antiparasitics","Anticancer drugs"],
+      "Clinical and Applied Pharmacology": ["Prescription writing","Drug safety and monitoring","Toxicology and poisoning principles","Pharmacovigilance","Antimicrobial stewardship","Special populations and dose adjustment"]
+    }
+  };
+  Object.keys(TOPIC_GROUPS).forEach(course=>{
+    TOPICS[course]=Object.values(TOPIC_GROUPS[course]).flat();
+  });
   TOPICS.Biology = TOPICS["General Biology"];
   TOPICS.Chemistry = TOPICS["General Chemistry"];
   TOPICS.Physics = TOPICS["General Physics"];
@@ -140,5 +195,5 @@
     const extra = EXTRA.find(x => normalise(x) === wanted);
     return extra ? { name: extra, level: "200" } : null;
   }
-  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, TOPIC_BANK, EXTRA, coursesForLevel, allCourses, topicsFor, allLevels, findCourse });
+  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, TOPIC_GROUPS, TOPIC_BANK, EXTRA, coursesForLevel, allCourses, topicsFor, topicGroupsFor: course => TOPIC_GROUPS[course] || null, allLevels, findCourse });
 })(window);
