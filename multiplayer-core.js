@@ -2237,6 +2237,7 @@ async function fetchQuestionsForMatch(settings, onStatus){
     Q.forEach(normalizeExplanationCasing);
     Q.forEach(q=>mpSessionSeen.add(hashQ(q.q)));
     shuffleArr(Q);
+    if(window.MediSurgImages) await MediSurgImages.attach(Q,onStatus);
     return Q;
 }
 
@@ -3454,7 +3455,7 @@ async function beginMatchForRoom(roomId, settings, playersArr, teamNames, status
     let questions = await fetchQuestionsForMatch(settings, onStatus);
     if(!Array.isArray(questions) || !questions.length){ if(!target && splash) splash.style.display='none'; throw new Error('No questions were generated. Please retry.'); }
     if(!target && splash) splash.style.display='none';
-    let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null}));
+    let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null, imageUrl:q.imageUrl||null}));
     let answerKey={};
     questions.forEach((q,i)=>{ answerKey[i]={answer:q.answer, explanation:q.explanation||''}; });
     await matchRef.set({
@@ -3492,7 +3493,7 @@ async function tryStartWaitingMatch(matchId, m){
         if(!claim.committed){matchLocalState.startingMatch=false;return;}
         let onStatus = t=>{ if(target) target.textContent='🔎 '+t; };
         let questions = await fetchQuestionsForMatch(m.settings, onStatus);
-        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null}));
+        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null, imageUrl:q.imageUrl||null}));
         let answerKey={};
         questions.forEach((q,i)=>{ answerKey[i]={answer:q.answer, explanation:q.explanation||''}; });
         await mdb.ref('medisurg/mp_matches/'+matchId).update({
@@ -3580,7 +3581,7 @@ async function hostStartTeamWaitingMatch(matchId, m){
         if(!claim.committed){matchLocalState.startingMatch=false;return;}
         // Every participant sees the shared generating state from the transaction.
         let questions = await fetchQuestionsForMatch(m.settings, null);
-        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options}));
+        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imageUrl:q.imageUrl||null}));
         let answerKey={};
         questions.forEach((q,i)=>{ answerKey[i]={answer:q.answer, explanation:q.explanation||''}; });
         await mdb.ref('medisurg/mp_matches/'+matchId).update({
@@ -4044,8 +4045,9 @@ function renderMatchScreen(matchId, m){
     $('mProg').style.width=Math.round((qIdx/(m.questions.length||1))*100)+'%';
     // ---- question + options ----
     $('mQt').textContent=q.q;
+    if(window.MediSurgImages) MediSurgImages.render('mQt',q);
     let keyEntryForFlag = m.answerKey && m.answerKey[qIdx];
-    matchLocalState.currentQData={subject:q.subject, q:q.q, options:q.options, answer:keyEntryForFlag?keyEntryForFlag.answer:undefined, explanation:keyEntryForFlag?keyEntryForFlag.explanation:''};
+    matchLocalState.currentQData={subject:q.subject, q:q.q, options:q.options, imageUrl:q.imageUrl||null, answer:keyEntryForFlag?keyEntryForFlag.answer:undefined, explanation:keyEntryForFlag?keyEntryForFlag.explanation:''};
     let flagBtn=$('mFlagBtn'); if(flagBtn) flagBtn.classList.toggle('flagged', isMatchQFlagged(q));
     let myLocked=m.answers && m.answers[qIdx] && m.answers[qIdx][MY_UID];
     let keyEntry = m.answerKey && m.answerKey[qIdx]; // only populated by Firebase once reveal===true
@@ -4551,6 +4553,7 @@ function showResultsScreen(matchId, m){
         return `<details style="margin-top:6px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px">
             <summary style="cursor:pointer;font-size:11px;font-weight:700;color:${mySel===key.answer?'var(--success)':'var(--error)'}">Q${qi+1}. ${esc((q.q||'').slice(0,70))}${(q.q||'').length>70?'…':''}</summary>
             <div style="font-size:11px;margin-top:8px;color:var(--text)">${esc(q.q)}</div>
+            ${window.MediSurgImages?MediSurgImages.html(q.imageUrl):''}
             <div style="margin-top:6px">${q.options.map((opt,oi)=>{
                 let isCorr=oi===key.answer, isMine=oi===mySel;
                 return `<div style="font-size:10px;padding:5px;border:1px solid ${isCorr?'var(--success)':isMine?'var(--error)':'var(--border2)'};border-radius:5px;margin-top:4px;background:${isCorr?'rgba(0,255,136,0.1)':isMine?'rgba(255,71,87,0.1)':'transparent'};color:var(--text)">${String.fromCharCode(65+oi)}. ${esc(opt)} ${isCorr?'✅':''} ${isMine&&!isCorr?'❌ your pick':''}</div>`;
@@ -5150,7 +5153,7 @@ async function applyMyResultToProfile(matchId, m, iWon, isDraw){
 
     // Full record for History & Performance: includes the actual question set + my answers so
     // the player can review right/wrong per question, or redo the exact same set solo later.
-    let qArr=qids.map(qi=>({q:m.questions[qi].q, options:m.questions[qi].options, subject:m.questions[qi].subject}));
+    let qArr=qids.map(qi=>({q:m.questions[qi].q, options:m.questions[qi].options, subject:m.questions[qi].subject, imageUrl:m.questions[qi].imageUrl||null}));
     let keyArr=qids.map(qi=>({answer:m.answerKey[qi].answer, explanation:m.answerKey[qi].explanation||''}));
     await mdb.ref('medisurg/mp_match_history/'+MY_UID).push({
         matchId, opponentUid:myOpponentUid(m), result: isDraw?'draw':(iWon?'win':'loss'),
@@ -5416,6 +5419,7 @@ function renderMPHistory(){
                         let key=(item.answerKey||[])[qi]||{};
                         return `<div style="margin-bottom:8px;padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid ${ua==null||ua===-1?'#666':ua===key.answer?'var(--success)':'var(--error)'}">
                             <div style="font-size:11px;font-weight:700;margin-bottom:4px">${qi+1}. ${esc(q.q)}</div>
+                            ${window.MediSurgImages?MediSurgImages.html(q.imageUrl):''}
                             ${(q.options||[]).map((opt,oi)=>{
                                 let isCorr=oi===key.answer, isUser=oi===ua;
                                 return `<div style="font-size:10px;padding:4px 6px;margin:3px 0;border:1px solid ${isCorr?'var(--success)':isUser?'var(--error)':'var(--border2)'};background:${isCorr?'rgba(0,255,136,0.1)':isUser?'rgba(255,71,87,0.1)':'transparent'};border-radius:4px">
