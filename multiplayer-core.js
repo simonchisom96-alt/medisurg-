@@ -3252,14 +3252,35 @@ async function startQuickMatchSearch(){
         }
         if(elapsed>32000){
             clearInterval(timeoutHandle);
-            cleanupQuickMatchListeners();
+            // Atomically claim our own ticket for the AI fallback. If another human has
+            // already paired with us, their transaction wins and we must not create a
+            // second match for the same player.
+            let fallbackClaim=null;
+            try{
+                fallbackClaim=await myTicketRef.transaction(cur=>{
+                    if(!cur || cur.claimed || cur.status!=='searching') return;
+                    cur.claimed=true;
+                    cur.claimedBy='ai';
+                    cur.status='ai_fallback';
+                    return cur;
+                });
+            }catch(claimError){
+                console.warn('[QuickMatch] AI fallback claim failed',claimError);
+                return;
+            }
+            if(!fallbackClaim.committed){
+                // The human-pairing listener owns the next step if a real opponent
+                // claimed this ticket first.
+                return;
+            }
             qmSearching=false;
-            mdb.ref('medisurg/mp_matchmaking_queue/'+MY_UID).remove();
+            cleanupQuickMatchListeners();
+            await myTicketRef.remove().catch(()=>{});
             mdb.ref('medisurg/mp_users/'+MY_UID+'/quickMatchSearching').set(false).catch(()=>{});
             try{ await spawnBotMatch(settings); }
             catch(e){
                 console.warn('[QuickMatch] bot fill failed', e);
-                $('qmSearchStatus').innerHTML='😴 No one is available right now — try again in a bit, or create a public room and wait for someone to join. <button class="btn-p btn-sm" style="margin-top:8px" onclick="startQuickMatchSearch()">Search Again</button>';
+                $('qmSearchStatus').innerHTML='😴 AI practice could not start. Try again, or create a public room and wait for another player. <button class="btn-p btn-sm" style="margin-top:8px" onclick="startQuickMatchSearch()">Search Again</button>';
             }
         }
     },1000);
@@ -3310,6 +3331,18 @@ async function startQuickMatchSearch(){
                 return cur;
             });
             if(result.committed && result.snapshot.val() && result.snapshot.val().claimedBy===MY_UID){
+                // The AI-fallback timeout may have won while this queue callback was
+                // waiting on Firebase. Release our provisional opponent claim instead
+                // of creating a duplicate human match.
+                if(!qmSearching){
+                    await targetTicketRef.transaction(cur=>{
+                        if(!cur || cur.claimedBy!==MY_UID || cur.roomId) return;
+                        cur.claimed=false;
+                        delete cur.claimedBy;
+                        return cur;
+                    });
+                    return;
+                }
                 let opp=result.snapshot.val();
                 clearInterval(timeoutHandle);
                 cleanupQuickMatchListeners();
