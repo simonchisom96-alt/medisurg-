@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b2345">
+<title>MediSurg — System Check</title>
+<style>
+:root{color-scheme:light;--navy:#0b2345;--blue:#1769aa;--red:#e5394b;--ink:#17263b;--muted:#64748b;--line:#d9e3ef;--bg:#f3f7fc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 48px}.top{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:54px;height:54px}.brand{font-weight:850;color:var(--navy);font-size:20px}.sub{font-size:12px;color:var(--muted)}
+h1{font-size:25px;line-height:1.2;margin:20px 0 8px;color:var(--navy)}p{color:var(--muted)}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 5px 20px #102b4d0a}
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #edf1f6}.item:last-child{border:0}
+.dot{width:12px;height:12px;border-radius:50%;background:#94a3b8;margin-top:5px;flex:none}.dot.ok{background:#16a36a}.dot.bad{background:var(--red)}.dot.wait{background:#d69e22}
+.name{font-weight:750;color:var(--navy)}.detail{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+button{border:0;border-radius:11px;padding:13px 18px;background:var(--blue);color:white;font-weight:750;font-size:14px;width:100%;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}.note{font-size:12px;background:#fff7e8;border:1px solid #f4dfb8;border-radius:12px;padding:12px;color:#78561b}
+a{color:var(--blue);font-weight:650}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="./firebase-config.js"></script>
+<script src="./medical-curriculum.js"></script>
+</head>
+<body>
+<main>
+  <div class="top"><img class="logo" src="./medisurg-logo.svg" alt=""><div><div class="brand">MediSurg</div><div class="sub">System diagnostics · read-only database checks</div></div></div>
+  <h1>Check your Arena connection</h1>
+  <p>This page checks the deployed files, anonymous sign-in, and permission to read your own MediSurg player profile. It does not create, edit, or delete player data.</p>
+  <div class="card" id="results" aria-live="polite">
+    <div class="item"><span class="dot wait"></span><div><div class="name">Ready to check</div><div class="detail">Tap the button below to begin.</div></div></div>
+  </div>
+  <button id="run" type="button">Run system checks</button>
+  <div class="card">
+    <div class="name">What this can and cannot verify</div>
+    <p class="detail">A successful profile read confirms that sign-in and this database read permission work for the current browser. It does not prove that every multiplayer write rule, room workflow, leaderboard query, or Pollinations image-generation secret is configured correctly.</p>
+    <p class="detail">Image generation also requires the Cloudflare Pages secret <b>POLLINATIONS_API_KEY</b> and R2 binding <b>MEDISURG_IMAGES</b>.</p>
+    <p class="detail"><a href="./quiz.html">Return to Multiplayer Arena</a> · <a href="./quiz1.html">Open Single Player</a></p>
+  </div>
+  <div class="note">If Anonymous sign-in is disabled, enable it in Firebase Authentication. If the profile read is denied, the Realtime Database rules must allow an authenticated user to read their own <code>medisurg/mp_users/{uid}</code> record.</div>
+</main>
+<script>
+(function(){
+  const results=document.getElementById('results');
+  const button=document.getElementById('run');
+  function row(name,detail,state){
+    const el=document.createElement('div');el.className='item';
+    const dot=document.createElement('span');dot.className='dot '+(state||'wait');
+    const wrap=document.createElement('div');const title=document.createElement('div');title.className='name';title.textContent=name;
+    const desc=document.createElement('div');desc.className='detail';desc.textContent=detail;
+    wrap.append(title,desc);el.append(dot,wrap);results.append(el);
+  }
+  function timeout(p,ms,label){return Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out')),ms))]);}
+  async function run(){
+    button.disabled=true;button.textContent='Checking…';results.replaceChildren();
+    try{
+      const cfg=window.MEDISURG_FIREBASE_CONFIG;
+      if(!cfg || cfg.databaseURL!=='https://passcode-3de5f-default-rtdb.firebaseio.com'){
+        row('Firebase configuration','The expected MediSurg Firebase database URL is not loaded.','bad');return;
+      }
+      row('Firebase configuration','Correct MediSurg project and Realtime Database URL loaded.','ok');
+      if(!window.MediSurgCurriculum || !window.MediSurgCurriculum.allCourses){
+        row('Medical curriculum','Curriculum script did not load.','bad');
+      }else{
+        const count=window.MediSurgCurriculum.allCourses().length;
+        row('Medical curriculum',count+' course entries are available across levels 100–600.','ok');
+      }
+      const app=firebase.apps.find(a=>a.name==='medisurg')||firebase.initializeApp(cfg,'medisurg');
+      const auth=app.auth(),db=app.database();
+      let user=auth.currentUser;
+      if(!user){
+        user=await timeout(auth.signInAnonymously().then(x=>x.user),12000,'Anonymous sign-in');
+      }
+      if(!user){row('Firebase Authentication','No authenticated user was returned.','bad');return;}
+      row('Firebase Authentication','Signed in successfully ('+(user.isAnonymous?'anonymous':'linked')+' session).','ok');
+      const connected=await timeout(new Promise((resolve,reject)=>{
+        const ref=db.ref('.info/connected');
+        const cb=s=>{if(s.val()===true){ref.off('value',cb);resolve(true)}};
+        ref.on('value',cb,e=>{ref.off('value',cb);reject(e)});
+      }),10000,'Realtime Database connection');
+      row('Realtime Database connection','Connected to the supplied Firebase database.','ok');
+      try{
+        const snap=await timeout(db.ref('medisurg/mp_users/'+user.uid).get(),10000,'Player profile read');
+        row('Player profile permission',snap.exists()?'Your authenticated profile can be read.':'Read permission works; no profile exists for this browser yet.','ok');
+      }catch(e){
+        row('Player profile permission',(e&&e.code==='PERMISSION_DENIED'?'Firebase denied this profile read. Check RTDB rules for /medisurg/mp_users/$uid.':(e&&e.message)||'Profile read failed.'),'bad');
+      }
+    }catch(e){
+      const code=e&&e.code||'';
+      const message=code==='auth/operation-not-allowed'?'Anonymous sign-in is disabled in Firebase Authentication. Enable the Anonymous provider.':code==='auth/unauthorized-domain'?'This deployed domain is not listed under Firebase Authentication authorised domains.':(e&&e.message)||'Check failed.';
+      row('Connection / sign-in',message,'bad');
+    }finally{
+      button.disabled=false;button.textContent='Run checks again';
+    }
+  }
+  button.addEventListener('click',run);
+})();
+</script>
+</body></html>
