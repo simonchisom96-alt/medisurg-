@@ -3,16 +3,16 @@
   "use strict";
   const LEVELS = {
     "100": [
-      "General Biology","General Chemistry","General Physics","Mathematics for Medical Sciences","Use of English",
+      "General Biology","Biology","General Chemistry","Chemistry","General Physics","Physics","Mathematics for Medical Sciences","Use of English",
       "Cell Biology","Human Biology","Introduction to Anatomy","Introduction to Physiology","Introduction to Biochemistry",
       "Medical Terminology","Genetics","Basic Statistics and Biostatistics","ICT for Health Sciences","Introduction to Medicine",
       "Communication Skills","Psychology and Behavioural Science","Health Systems and Primary Health Care","Basic Life Support and First Aid",
       "General Studies"
     ],
     "200": [
-      "Gross Anatomy","Systemic Anatomy","Histology","Embryology","Neuroanatomy (Introduction)","Human Physiology",
-      "General Biochemistry","Medical Genetics","Medical Microbiology","Parasitology","Immunology","General Pathology",
-      "General Pharmacology","Community Medicine","Behavioural Sciences","Medical Ethics and Law","Biostatistics and Research Methods",
+      "Gross Anatomy","Anatomy","Systemic Anatomy","Histology","Embryology","Neuroanatomy (Introduction)","Human Physiology","Physiology",
+      "General Biochemistry","Biochemistry","Medical Genetics","Medical Microbiology","Parasitology","Immunology","General Pathology","Pathology",
+      "General Pharmacology","Pharmacology","Community Medicine","Behavioural Sciences","Medical Ethics and Law","Biostatistics and Research Methods",
       "Clinical Skills and Patient Communication","Nutrition and Metabolism","Introduction to Public Health"
     ],
     "300": [
@@ -41,7 +41,7 @@
       "Advanced Internal Medicine","Advanced General Surgery","Advanced Paediatrics","Advanced Obstetrics and Gynaecology",
       "Advanced Psychiatry","Advanced Community Medicine and Public Health","Emergency and Acute Care","Intensive Care Medicine",
       "Cardiology","Respiratory Medicine","Gastroenterology","Hepatology","Nephrology","Endocrinology",
-      "Neurology and Neurosciences","Infectious Diseases","Rheumatology"," haematology and Oncology",
+      "Neurology and Neurosciences","Infectious Diseases","Rheumatology","Haematology and Oncology",
       "Urology","Neurosurgery","Cardiothoracic Surgery","Paediatric Surgery","Vascular Surgery",
       "Plastic and Reconstructive Surgery","Ophthalmology","ENT and Head and Neck Surgery","Dermatology",
       "Obstetric and Gynaecological Subspecialties","Geriatric Medicine","Rehabilitation and Palliative Medicine",
@@ -107,9 +107,7 @@
   const normalise = s => String(s || "").trim().toLowerCase().replace(/\s+/g," ");
   const topicsFor = course => TOPICS[course] || ["Foundations and terminology","Normal structure and function","Core mechanisms and principles","Common disorders and pathophysiology","Investigations and interpretation","Clinical and applied correlations","Prevention and public health","Revision and integration"];
   function coursesForLevel(level) {
-    const list = (LEVELS[String(level)] || []).slice();
-    EXTRA.forEach(name => { if (!list.some(x => normalise(x) === normalise(name))) list.push(name); });
-    return list;
+    return (LEVELS[String(level)] || []).slice();
   }
   function allLevels() { return Object.keys(LEVELS); }
   function findCourse(name) {
