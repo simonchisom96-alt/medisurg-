@@ -217,13 +217,25 @@ global.ESITopics = {
         html += `</div>`;
       }
     }
+    const disciplineGroups=window.MediSurgCurriculum.topicGroupsFor ? window.MediSurgCurriculum.topicGroupsFor(state.subject) : null;
     bands.forEach(band=>{
       if(bandHint && q!==band.toLowerCase() && q!==(band.toLowerCase()+" level") && q!==(band.toLowerCase()+"level")) return;
       let items=group[band]||[];
       items=selectedFirst(items).filter(t=>bandHint||matchesQuery(t,q));
       if(!items.length)return;
       html += `<div class="esi-sec">${band} LEVEL</div>`;
-      items.forEach(t=>{html += rowHtml(t);});
+      if(disciplineGroups){
+        Object.entries(disciplineGroups).forEach(([discipline,topics])=>{
+          const groupMatches=matchesQuery(discipline,q);
+          const visible=(topics||[]).filter(t=>items.includes(t)&&(groupMatches||matchesQuery(t,q)));
+          if(!visible.length)return;
+          html += `<details open style="margin:6px 0 8px;border:1px solid #203a61;border-radius:9px;padding:7px 9px;background:rgba(17,42,77,.35)"><summary style="cursor:pointer;color:#8ecbff;font-size:11px;font-weight:850;padding:3px 0">${escapeHtml(discipline)} <span style="opacity:.7">(${visible.length})</span></summary><div style="padding-top:5px">`;
+          visible.forEach(t=>{html += rowHtml(t);});
+          html += `</div></details>`;
+        });
+      }else{
+        items.forEach(t=>{html += rowHtml(t);});
+      }
     });
     if(!html) html = '<div class="esi-sec">No topic matches that search</div>';
     $('esiTopicList').innerHTML = html;
