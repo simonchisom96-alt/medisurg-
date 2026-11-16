@@ -949,23 +949,33 @@ function setupPresence(uid){
 
 async function initAfterAuth(uid){
     MY_UID=uid;
+    const splash=$('loadingSplash');
+    const withTimeout=(promise,ms,label)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out')),ms))]);
+    // A profile read is the one required Firebase read. Optional presence/room cleanup
+    // must never hold the Arena splash open.
+    let snap;
     try{
-        // Verify the authenticated profile can be read before removing the startup screen.
-        let snap=await mdb.ref('medisurg/mp_users/'+uid).get();
-        setupPresence(uid);
-        cleanupInactiveRooms();
-        if(snap.exists()){
-            ME=snap.val();ME.uid=uid;
-            onProfileReady();
-            checkDailyStreak();
-        }else{
-            $('nameModal').classList.add('active');
-        }
-        let splash=$('loadingSplash'); if(splash) splash.style.display='none';
+        snap=await withTimeout(mdb.ref('medisurg/mp_users/'+uid).get(),12000,'Player profile read');
     }catch(error){
         console.error('[Arena] player profile read failed:',error);
         throw error;
     }
+    if(snap.exists()){
+        ME=snap.val()||{};
+        ME.uid=uid;
+        // Let the player enter the Arena once identity/profile data is available.
+        if(splash) splash.style.display='none';
+        try{ onProfileReady(); }
+        catch(error){ console.error('[Arena] non-critical hub initialisation failed:',error); toast('Arena connected. Some hub panels may need a refresh.'); }
+        try{ checkDailyStreak(); }catch(error){ console.warn('[Arena] daily streak setup skipped:',error); }
+    }else{
+        const modal=$('nameModal');
+        if(modal) modal.classList.add('active');
+        if(splash) splash.style.display='none';
+    }
+    try{ setupPresence(uid); }catch(error){ console.warn('[Arena] presence setup failed:',error); }
+    try{ Promise.resolve(cleanupInactiveRooms()).catch(error=>console.warn('[Arena] room cleanup skipped:',error)); }
+    catch(error){ console.warn('[Arena] room cleanup skipped:',error); }
 }
 
 // ============================================================================================
@@ -6663,29 +6673,51 @@ function renderRRTable(t){
 // Anything a developer needs to actually debug a connection problem goes to console.error only,
 // which is invisible to a normal user unless they deliberately open devtools.
 let arenaBootReady=false;
+let arenaAuthStateSeen=false;
+let arenaInitUid=null;
+let arenaInitPromise=null;
 function authFailureMessage(error){
     const code=error&&error.code||'';
     if(code==='auth/operation-not-allowed') return 'MediSurg sign-in is not enabled yet. Enable Anonymous sign-in in Firebase Authentication, then reload.';
     if(code==='auth/network-request-failed') return 'The connection to MediSurg was interrupted. Check your internet connection and retry.';
-    if(code==='auth/unauthorized-domain') return 'This website address is not authorised in Firebase Authentication. Add the deployed domain to Firebase authorised domains.';
+    if(code==='auth/unauthorized-domain') return 'This website address is not authorised in Firebase Authentication. Add medisurg.pages.dev to Firebase authorised domains.';
+    if(code==='PERMISSION_DENIED' || code==='database/permission-denied') return 'You signed in, but Firebase denied access to your MediSurg player profile. Check the Realtime Database rules for /medisurg/mp_users/{uid}.';
     return 'MediSurg could not complete sign-in. Check your connection and Firebase Authentication settings, then retry.';
 }
+function startArenaForUser(user){
+    if(!user || arenaInitUid===user.uid && arenaInitPromise) return arenaInitPromise;
+    arenaInitUid=user.uid;
+    arenaInitPromise=initAfterAuth(user.uid).then(()=>{
+        arenaBootReady=true;
+        window.__MEDISURG_ARENA_READY=true;
+    }).catch(error=>{
+        arenaInitUid=null;arenaInitPromise=null;
+        console.error('[Arena] profile initialisation failed:',error);
+        showLoadingRetry(authFailureMessage(error));
+        throw error;
+    });
+    return arenaInitPromise;
+}
 mauth.onAuthStateChanged(user=>{
+    arenaAuthStateSeen=true;
     if(user){
-        initAfterAuth(user.uid).then(()=>{arenaBootReady=true;}).catch(e=>{
-            console.error('[Arena] profile initialisation failed:',e);
-            showLoadingRetry(e&&e.code==='PERMISSION_DENIED' ? 'You signed in, but MediSurg cannot read your player profile. Check Realtime Database rules for /medisurg/mp_users/.' : 'You signed in, but MediSurg could not finish loading your profile. Please retry.');
-        });
+        startArenaForUser(user).catch(()=>{});
     }else{
-        mauth.signInAnonymously().catch(e=>{
-            console.error('[Auth] anonymous sign-in failed:',e);
-            showLoadingRetry(authFailureMessage(e));
+        mauth.signInAnonymously().catch(error=>{
+            console.error('[Auth] anonymous sign-in failed:',error);
+            showLoadingRetry(authFailureMessage(error));
         });
     }
 },error=>{
+    arenaAuthStateSeen=true;
     console.error('[Auth] auth-state listener failed:',error);
     showLoadingRetry(authFailureMessage(error));
 });
+setTimeout(()=>{
+    if(!arenaAuthStateSeen && !arenaBootReady){
+        showLoadingRetry('MediSurg could not receive Firebase Authentication status. Check that the Firebase Auth SDK loaded and that this domain is authorised.');
+    }
+},15000);
 function showLoadingRetry(message){
     let txt=$('loadingSplashText'), btn=$('loadingRetryBtn'), splash=$('loadingSplash');
     if(splash) splash.style.display='flex';
