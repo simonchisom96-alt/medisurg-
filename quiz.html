@@ -564,7 +564,7 @@ function closeYourCustomModal() {
         .subj-dd{position:relative}
         .subj-dd-btn{width:100%;padding:12px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:12.5px;color:var(--text)}
         .subj-dd-arrow{color:var(--accent);font-size:10px;flex-shrink:0;margin-left:6px}
-        .subj-dd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;max-height:240px;overflow-y:auto;z-index:60;padding:4px;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+        .subj-level-head{padding:8px 9px;margin-top:5px;background:var(--bg);color:var(--accent);font-size:10px;font-weight:900;letter-spacing:.06em;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:1}.subj-course-search{width:100%;padding:10px;margin:0 0 7px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px}.subj-empty{padding:12px;color:var(--muted);font-size:11px}.subj-dd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;max-height:240px;overflow-y:auto;z-index:60;padding:4px;box-shadow:0 10px 24px rgba(0,0,0,.4)}
         .subj-dd-panel.open{display:block}
         .subj-dd-item{display:flex;align-items:center;gap:9px;padding:9px 8px;font-size:12px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border2)}
         .subj-dd-item:last-child{border-bottom:none}
@@ -775,7 +775,7 @@ function closeYourCustomModal() {
     <div id="gateScreen">
     <header>
         <div class="left">
-            <img src="medisurg-logo.svg" class="logo-img"  alt="Logo">
+            <img src="medisurg-logo.svg?v=20261116" class="logo-img"  alt="Logo">
             <div class="logo-t">MEDISURG</div>
         </div>
         <a href="quiz1.html" class="back-btn">← Single Player</a>
@@ -850,7 +850,7 @@ function closeYourCustomModal() {
     <header>
         <div class="left">
             <a href="quiz.html" class="back-btn">← Back</a>
-            <img src="medisurg-logo.svg" class="logo-img" >
+            <img src="medisurg-logo.svg?v=20261116" class="logo-img" >
         </div>
         <div style="display:flex;gap:5px;align-items:center">
             <span id="net" style="width:8px;height:8px;border-radius:50%;display:inline-block;background:#556" title="Connection status"></span>
@@ -866,7 +866,7 @@ function closeYourCustomModal() {
          Nothing technical is ever shown here: no error codes, hostnames, or console-style text,
          just a calm "connecting" state and (only after a real delay) a plain Retry button. -->
     <div id="loadingSplash" style="position:fixed;inset:0;background:var(--bg);z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center">
-        <img src="medisurg-logo.svg"  style="width:70px;height:70px;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 16px #ffd70066">
+        <img src="medisurg-logo.svg?v=20261116"  style="width:70px;height:70px;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 16px #ffd70066">
         <div style="width:34px;height:34px;border:3px solid #22346e;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite"></div>
         <div id="loadingSplashText" style="color:var(--muted);font-size:12px;font-weight:700">Connecting to the Arena…</div>
         <button id="loadingRetryBtn" class="btn btn-g" style="width:auto;padding:10px 20px;display:none" onclick="location.reload()">Retry</button>
