@@ -3619,7 +3619,7 @@ async function spawnBotMatch(settings){
     $('qmSearchStatus').innerHTML='🔎 AI practice opponent ready · generating questions…';
     let roomId=mdb.ref('medisurg/mp_rooms').push().key;
     let players={};
-    players[botUid]={name:bot.name, ready:true, team:'A', uid:botUid};
+    players[botUid]={name:bot.name, ready:true, team:'A', uid:botUid, isBot:true};
     players[MY_UID]={name:ME.username, ready:true, team:'B', uid:MY_UID};
     await mdb.ref('medisurg/mp_rooms/'+roomId).set({
         hostUid:MY_UID, hostName:ME.username, type:'quickmatch', visibility:'private',
