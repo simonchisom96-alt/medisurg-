@@ -1077,6 +1077,7 @@ async function gen(){
         saveSeen(seenHashes);
         
         if($('sh') && $('sh').checked) Q.sort(() => Math.random() - 0.5);
+        if(window.MediSurgImages) await MediSurgImages.attach(Q, msg=>{ $('stat').textContent=msg; });
         try{localStorage.setItem(cacheK, JSON.stringify(Q))}catch(e){}
         
         start();
@@ -1148,6 +1149,7 @@ function draw(){
     $('qc').textContent=`INSTANCE NODE ${i+1}/${Q.length} • Subject: ${q.subject}`;
     $('pr').style.width=((i+1)/Q.length*100)+'%';
     $('qt').innerHTML=q.q;
+    if(window.MediSurgImages) MediSurgImages.render('qt',q);
     let opDiv=$('op');opDiv.innerHTML='';
     let currentQTimeStart=Date.now();
     q.options.forEach((o,idx)=>{
@@ -1752,6 +1754,7 @@ function renderHistory(){
                             let ua=item.userAns[qi];
                             return `<div style="margin-bottom:8px;padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid ${ua==null?'#666':ua===q.answer?'var(--success)':'var(--error)'}">
                                 <div style="font-size:11px;font-weight:700;margin-bottom:4px;color:var(--text)">${qi+1}. ${q.q}</div>
+                                ${window.MediSurgImages?MediSurgImages.html(q.imageUrl):''}
                                 ${q.options.map((opt,oi)=>{
                                     let isCorr=oi===q.answer;let isUser=oi===ua;
                                     return `<div style="font-size:10px;padding:4px 6px;margin:3px 0;border:1px solid ${isCorr?'var(--success)':isUser?'var(--error)':'var(--border2)'};background:${isCorr?'rgba(0,255,136,0.1)':isUser?'rgba(255,71,87,0.1)':'transparent'};border-radius:4px;color:var(--text)">
