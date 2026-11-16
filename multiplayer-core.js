@@ -528,7 +528,7 @@ const gateFirebaseConfig = window.MEDISURG_FIREBASE_CONFIG;
  const gateApp = firebase.apps.find(app => app.name === 'medisurg') || firebase.initializeApp(gateFirebaseConfig, 'medisurg');
 const db = gateApp.database();
 
-const WHATSAPP_NUMBER = "2348108391083";
+const WHATSAPP_NUMBER = "";
 const UNLOCK_STORAGE_KEY = "elite_mp_unlock_v6";
 const UNLOCK_KEY_STORAGE = "elite_mp_key_v6";
 
@@ -828,7 +828,7 @@ function renderMpTopicButtons(setKey, wrapId){
 let crMode='spak';
 let currentRoomId=null;
 let roomUnsub=null;
-let predictionsUnsub=null;
+
 let lastRoomPlayers={};
 let lastRoomHostUid=null;
 let lobbyChatUnsub=null;
@@ -1462,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         let cat=$('category').value;let msg=$('message').value;
         let formattedText=`*MEDISURG ARENA - REPORT*\n\n• *Category:* ${cat}\n• *Message:* ${msg}\n• *From:* ${ME?ME.username:'guest'}`;
         let encodedText=encodeURIComponent(formattedText);
-        window.open(`https://wa.me/2348108391083?text=${encodedText}`,'_blank');
+        window.open(`https://wa.me/?text=${encodedText}`,'_blank');
         toast('Redirecting to WhatsApp…');
         closeModal('suggestionModal');form.reset();
     });
@@ -2374,9 +2374,7 @@ async function expireInactiveRoom(roomId){
         );
         // Predictions are stored separately from the room node; remove the
         // room-specific record too so expired rooms leave no orphaned data.
-        cleanupTasks.push(mdb.ref('medisurg/mp_room_predictions/'+roomId).remove().catch(error=>{
-            console.warn('[RoomExpiry] Could not clear room predictions',error);
-        }));
+        
         await Promise.all(cleanupTasks);
         await Promise.all([...memberUids].map(uid=>
             mdb.ref('medisurg/mp_users/'+uid+'/activeRoomId').transaction(value=>value===roomId?null:value).catch(()=>{})
@@ -2440,14 +2438,11 @@ function enterLobby(roomId, asSpectator){
     if(MY_UID){ const u=mdb.ref('medisurg/mp_users/'+MY_UID); u.child('activeRoomId').set(roomId).catch(()=>{}); u.child('activeRooms/'+roomId+'/joinedAt').set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{}); }
     isLobbySpectating=!!asSpectator;
     if(roomUnsub)roomUnsub();
-    if(predictionsUnsub){predictionsUnsub();predictionsUnsub=null;}
     let ref=mdb.ref('medisurg/mp_rooms/'+roomId);
-    let lastLobbyRoomForPredictions=null;
     let cb=snap=>{
         let room=snap.val();
         if(!room){ toast('Room closed.'); leaveRoomLocalOnly(); showScreen('rooms'); return; }
         let amPlayer=!!(room.players && room.players[MY_UID]);
-        lastLobbyRoomForPredictions=room;
         if(!amPlayer && !isLobbySpectating){ toast('You were removed from this room.'); leaveRoomLocalOnly(); showScreen('rooms'); return; }
         if(amPlayer) isLobbySpectating=false;
         // Once a room has entered a match, prediction/chat/room metadata updates must NOT
@@ -2457,13 +2452,10 @@ function enterLobby(roomId, asSpectator){
             if(currentMatchId!==room.matchId) joinExistingMatch(room.matchId, roomId, !amPlayer);
             return;
         }
-        lastLobbyRoomForPredictions=room;
         const structuralRoom={...room};
-        delete structuralRoom.predictions;
         delete structuralRoom.lastActivityAt;
         const structuralSnapshot=JSON.stringify(structuralRoom);
         if(lastLobbyStructuralSnapshot===structuralSnapshot){
-            renderPredictionsPool(room);
             return;
         }
         if(lastLobbyStructuralSnapshot!==null) touchRoomActivity(roomId);
@@ -2472,17 +2464,6 @@ function enterLobby(roomId, asSpectator){
     };
     ref.on('value', cb);
     roomUnsub=()=>ref.off('value', cb);
-    // Prediction votes live on their own path, not under mp_rooms/{id}. This prevents each
-    // vote from waking the full room/lobby listener during ready-up and question transitions.
-    const predictionsRef=mdb.ref('medisurg/mp_room_predictions/'+roomId);
-    const predictionsCb=snap=>{
-        if(currentRoomId!==roomId || !lastLobbyRoomForPredictions)return;
-        const room=lastLobbyRoomForPredictions;
-        if(room.status!=='waiting' && room.status!=='starting'){renderPredictionsPool(room);return;}
-        renderPredictionsPool({...room,predictions:{...(room.predictions||{}),...(snap.val()||{})}});
-    };
-    predictionsRef.on('value',predictionsCb);
-    predictionsUnsub=()=>predictionsRef.off('value',predictionsCb);
     attachLobbyChat(roomId);
     showScreen('lobby');
 }
@@ -2500,76 +2481,8 @@ function leaveRoomLocalOnly(){
     if(roomUnsub){roomUnsub();roomUnsub=null;}
     if(lobbyChatUnsub){lobbyChatUnsub();lobbyChatUnsub=null;}
     if(lobbyTypingUnsub){lobbyTypingUnsub();lobbyTypingUnsub=null;}
-    if(predictionsUnsub){predictionsUnsub();predictionsUnsub=null;}
     currentRoomId=null;
     isLobbySpectating=false;
-}
-// ---- Predictions Pool: players and spectators alike can predict the winner before a match
-// starts; correct guesses earn a small coin bonus once the result is in. ----
-function renderPredictionsPool(room){
-    let card=$('predictionsCard'); if(!card)return;
-    if(room.status!=='waiting' && room.status!=='starting'){ card.style.display='none'; return; }
-    card.style.display='block';
-    let preds=room.predictions||{};
-    let myPick=preds[MY_UID]?preds[MY_UID].pick:null;
-    let options;
-    if(room.teamMode){
-        options=[{key:'A',label:'Team A'},{key:'B',label:'Team B'}];
-    }else{
-        options=Object.values(room.players||{}).map(p=>({key:p.uid,label:p.name}));
-    }
-    let tally={};
-    Object.values(preds).forEach(p=>{ tally[p.pick]=(tally[p.pick]||0)+1; });
-    $('predictionsOptions').innerHTML=options.map(o=>`
-        <button class="btn-g btn-sm" style="margin:3px 4px 3px 0;${myPick===o.key?'background:var(--accent);color:#1a1400;border-color:var(--accent)':''}" onclick="predictWinner('${o.key}')">
-            ${esc(o.label)} ${tally[o.key]?`(${tally[o.key]})`:''} ${myPick===o.key?'✓':''}
-        </button>`).join('');
-    let total=Object.keys(preds).length;
-    $('predictionsTally').textContent = total ? `${total} prediction${total===1?'':'s'} in so far.` : 'No predictions yet — be the first!';
-    // ---- WhatsApp-poll-style breakdown: who picked what, by avatar + name ----
-    let votesWrap=$('predictionsVotesWrap');
-    if(total){
-        votesWrap.style.display='block';
-        votesWrap.innerHTML=`<details>
-            <summary style="cursor:pointer;font-size:9.5px;font-weight:700;color:var(--accent)">▶ View Votes</summary>
-            <div style="margin-top:6px">${options.map(o=>{
-                let voters=Object.values(preds).filter(p=>p.pick===o.key);
-                if(!voters.length)return '';
-                return `<div style="margin-top:6px">
-                    <div style="font-size:9.5px;font-weight:700;color:var(--muted)">${esc(o.label)} — ${voters.length}</div>
-                    ${voters.map(v=>`<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:3px 0"><span>${v.avatarEmoji||'🎓'}</span><span>${esc(v.name)}</span></div>`).join('')}
-                </div>`;
-            }).join('')}</div>
-        </details>`;
-    }else{
-        votesWrap.style.display='none';
-    }
-}
-async function predictWinner(pick){
-    if(!currentRoomId||!MY_UID)return;
-    touchRoomActivity(currentRoomId);
-    await mdb.ref('medisurg/mp_room_predictions/'+currentRoomId+'/'+MY_UID).set({pick, name:ME.username, avatarEmoji:ME.avatarEmoji||'🎓', ts:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
-}
-// Called once a match ends — pays out a small coin bonus to everyone (players or spectators)
-// who correctly predicted the winner, and reports how many got it right.
-async function resolvePredictionsPool(roomId, winnerKey){
-    if(!roomId||!winnerKey)return;
-    try{
-        const [snap,legacySnap]=await Promise.all([
-            mdb.ref('medisurg/mp_room_predictions/'+roomId).get(),
-            mdb.ref('medisurg/mp_rooms/'+roomId+'/predictions').get()
-        ]);
-        const preds={...(legacySnap.val()||{}),...(snap.val()||{})};
-        if(!Object.keys(preds).length)return;
-        let correctUids=Object.keys(preds).filter(uid=>preds[uid].pick===winnerKey);
-        if(correctUids.includes(MY_UID)){
-            let coinSnap=await mdb.ref('medisurg/mp_users/'+MY_UID+'/coins').get();
-            await mdb.ref('medisurg/mp_users/'+MY_UID+'/coins').set((coinSnap.val()||0)+15);
-            if(ME){ ME.coins=(ME.coins||0)+15; renderProfileScreen(); }
-            toast('🔮 Your prediction was correct! +15 coins');
-        }
-        if(correctUids.length) await pushRoomOrMatchNote(roomId, `🔮 ${correctUids.length} prediction${correctUids.length===1?'':'s'} called it right!`);
-    }catch(e){}
 }
 async function pushRoomOrMatchNote(roomId, text){
     try{ await mdb.ref('medisurg/mp_rooms/'+roomId+'/chat').push({from:'system', fromName:'System', text, sentAt:firebase.database.ServerValue.TIMESTAMP}); }catch(e){}
@@ -3006,7 +2919,6 @@ function renderLobby(roomId, room){
             <span class="ready-pill ${p.ready?'yes':'no'}">${p.ready?'READY':'NOT READY'}</span>
             ${(isHost && p.uid!==MY_UID)?`<button class="icon-btn" style="padding:3px 6px;margin-left:4px" title="Kick" onclick="kickPlayer('${p.uid}','${esc(p.name)}')">✖</button>`:''}
         </div>`).join('');
-    renderPredictionsPool(room);
     let switchBtn=$('lobbySwitchBtn');
     if(switchBtn){
         if(room.status!=='waiting'){
@@ -3701,7 +3613,6 @@ function joinExistingMatch(matchId, roomId, asSpectator){
             detachMatchChat();
             clearInterval(matchLocalState.timerHandle);
             clearInterval(matchLocalState.claimWinInterval);
-            if(roomId && m.winner && m.winner!=='draw') resolvePredictionsPool(roomId, m.winner);
             showResultsScreen(matchId, m);
             return;
         }
