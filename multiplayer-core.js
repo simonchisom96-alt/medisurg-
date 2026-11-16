@@ -1998,14 +1998,21 @@ async function respondChallenge(accept){
     let players={};
     players[c.fromUid]={name:c.fromName,ready:true,team:'A',uid:c.fromUid};
     players[MY_UID]={name:ME.username,ready:true,team:'B',uid:MY_UID};
-    await mdb.ref('medisurg/mp_rooms/'+roomId).set({
-        hostUid:c.fromUid, hostName:c.fromName, type:'challenge', visibility:'private',
-        settings:c.settings, teamMode:false, maxPlayers:2, powerups:true,
-        status:'starting', players, createdAt:firebase.database.ServerValue.TIMESTAMP, lastActivityAt:firebase.database.ServerValue.TIMESTAMP
-    });
-    let matchId=await beginMatchForRoom(roomId, c.settings, [{uid:c.fromUid,name:c.fromName,team:'A'},{uid:MY_UID,name:ME.username,team:'B'}]);
-    await mdb.ref('medisurg/mp_challenges/'+id).update({status:'accepted', matchId, roomId});
-    joinExistingMatch(matchId, roomId);
+    try{
+        await mdb.ref('medisurg/mp_rooms/'+roomId).set({
+            hostUid:c.fromUid, hostName:c.fromName, type:'challenge', visibility:'private',
+            settings:c.settings, teamMode:false, maxPlayers:2, powerups:true,
+            status:'starting', players, createdAt:firebase.database.ServerValue.TIMESTAMP, lastActivityAt:firebase.database.ServerValue.TIMESTAMP
+        });
+        let matchId=await beginMatchForRoom(roomId, c.settings, [{uid:c.fromUid,name:c.fromName,team:'A'},{uid:MY_UID,name:ME.username,team:'B'}]);
+        await mdb.ref('medisurg/mp_challenges/'+id).update({status:'accepted', matchId, roomId});
+        joinExistingMatch(matchId, roomId);
+    }catch(error){
+        console.error('[Arena] challenge match generation failed:',error);
+        await mdb.ref('medisurg/mp_rooms/'+roomId).remove().catch(()=>{});
+        await mdb.ref('medisurg/mp_challenges/'+id+'/status').set('pending').catch(()=>{});
+        toast('Could not prepare the challenge questions. The challenge is still available to retry.');
+    }
 }
 
 // ============================================================================================
@@ -2580,10 +2587,17 @@ async function hostStartMatch(){
         if(a===0||b===0){toast('Both teams need at least one player.');return;}
     }
     $('hostStartBtn').disabled=true;$('hostStartBtn').textContent='Generating questions…';
-    await mdb.ref('medisurg/mp_rooms/'+currentRoomId).update({status:'starting'});
-    let matchId=await beginMatchForRoom(currentRoomId, room.settings, plist, room.teamNames);
-    await mdb.ref('medisurg/mp_rooms/'+currentRoomId).update({status:'in_progress', matchId});
-    $('hostStartBtn').disabled=false;$('hostStartBtn').textContent='🚀 Start Match (Host)';
+    try{
+        await mdb.ref('medisurg/mp_rooms/'+currentRoomId).update({status:'starting'});
+        let matchId=await beginMatchForRoom(currentRoomId, room.settings, plist, room.teamNames);
+        await mdb.ref('medisurg/mp_rooms/'+currentRoomId).update({status:'in_progress', matchId});
+        $('hostStartBtn').disabled=false;$('hostStartBtn').textContent='🚀 Start Match (Host)';
+    }catch(error){
+        console.error('[Arena] host match generation failed:',error);
+        await mdb.ref('medisurg/mp_rooms/'+currentRoomId).update({status:'waiting'}).catch(()=>{});
+        $('hostStartBtn').disabled=false;$('hostStartBtn').textContent='🚀 Start Match (Host)';
+        toast('Could not prepare a complete question set. Your room is still open — please retry.');
+    }
 }
 
 function getESIInviteDetails(record, kind){
@@ -3440,7 +3454,7 @@ async function beginMatchForRoom(roomId, settings, playersArr, teamNames, status
     let questions = await fetchQuestionsForMatch(settings, onStatus);
     if(!Array.isArray(questions) || !questions.length){ if(!target && splash) splash.style.display='none'; throw new Error('No questions were generated. Please retry.'); }
     if(!target && splash) splash.style.display='none';
-    let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options}));
+    let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null}));
     let answerKey={};
     questions.forEach((q,i)=>{ answerKey[i]={answer:q.answer, explanation:q.explanation||''}; });
     await matchRef.set({
@@ -3478,7 +3492,7 @@ async function tryStartWaitingMatch(matchId, m){
         if(!claim.committed){matchLocalState.startingMatch=false;return;}
         let onStatus = t=>{ if(target) target.textContent='🔎 '+t; };
         let questions = await fetchQuestionsForMatch(m.settings, onStatus);
-        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options}));
+        let questionsPublic = questions.map(q=>({subject:q.subject, q:q.q, options:q.options, imagePrompt:q.imagePrompt||null}));
         let answerKey={};
         questions.forEach((q,i)=>{ answerKey[i]={answer:q.answer, explanation:q.explanation||''}; });
         await mdb.ref('medisurg/mp_matches/'+matchId).update({
