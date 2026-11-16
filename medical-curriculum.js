@@ -159,6 +159,19 @@
   Object.keys(TOPIC_GROUPS).forEach(course=>{
     TOPICS[course]=Object.values(TOPIC_GROUPS[course]).flat();
   });
+  const TOPIC_GROUP_ALIASES = {
+    "Gross Anatomy":"Anatomy","Systemic Anatomy":"Anatomy","Regional and Applied Anatomy":"Anatomy","Regional Anatomy":"Anatomy",
+    "Introduction to Anatomy":"Anatomy","Histology":"Anatomy","Embryology":"Anatomy","Neuroanatomy":"Anatomy","Neuroanatomy (Introduction)":"Anatomy",
+    "Human Physiology":"Physiology","Systemic Physiology":"Physiology",
+    "General Biochemistry":"Biochemistry","Clinical Biochemistry":"Biochemistry",
+    "Medical Parasitology":"Parasitology","Clinical Parasitology":"Parasitology",
+    "Medical Microbiology":"Microbiology","Clinical Microbiology":"Microbiology",
+    "General Pathology":"Pathology","Systemic Pathology":"Pathology",
+    "General Pharmacology":"Pharmacology","Systemic Pharmacology":"Pharmacology"
+  };
+  Object.entries(TOPIC_GROUP_ALIASES).forEach(([alias,canonical])=>{
+    TOPICS[alias]=Object.values(TOPIC_GROUPS[canonical]).flat();
+  });
   TOPICS.Biology = TOPICS["General Biology"];
   TOPICS.Chemistry = TOPICS["General Chemistry"];
   TOPICS.Physics = TOPICS["General Physics"];
@@ -195,5 +208,5 @@
     const extra = EXTRA.find(x => normalise(x) === wanted);
     return extra ? { name: extra, level: "200" } : null;
   }
-  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, TOPIC_GROUPS, TOPIC_BANK, EXTRA, coursesForLevel, allCourses, topicsFor, topicGroupsFor: course => TOPIC_GROUPS[course] || null, allLevels, findCourse });
+  root.MediSurgCurriculum = Object.freeze({ LEVELS, TOPICS, TOPIC_GROUPS, TOPIC_BANK, EXTRA, coursesForLevel, allCourses, topicsFor, topicGroupsFor: course => TOPIC_GROUPS[course] || TOPIC_GROUPS[TOPIC_GROUP_ALIASES[course]] || null, allLevels, findCourse });
 })(window);
