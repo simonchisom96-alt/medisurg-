@@ -73,7 +73,7 @@ global.ESITopics = {
 */
 (function(global){
   'use strict';
-  const RECENT_KEY = 'esi_recent_topics_v1';
+  const RECENT_KEY = 'medisurg_recent_topics_v1';
   const MAX_RECENT = 12;
 
   function $(id){ return document.getElementById(id); }
@@ -631,13 +631,13 @@ let curDiff='Hard';         // difficulty picked for the CURRENT session — set
 let lastSoloResult=null;    // snapshot taken by end() for the Share Result card
 const LB_PATH='medisurg/leaderboard';         // leaderboard/{month}/{uid} — one entry per verified uid, see firebase-rules-leaderboard.json
 const LB_NAMES='medisurg/leaderboard_names';  // leaderboard_names/{name} -> {uid,name} — global display-name reservation
-const LB_USER='elite_lb_user_v55';
-const STORE_KEY='elite_store_v55';
-const FLAG_KEY='elite_flagged_v55';
-const SEEN_KEY='elite_seen_qs_v55';
-const QS_KEY_PREFIX='elite_qs_history_v55_';
-const CACHE_PREFIX='elite_q_cache_v55_';
-const ACTIVE_KEY='elite_active_session_v55';
+const LB_USER='medisurg_lb_user_v55';
+const STORE_KEY='medisurg_store_v55';
+const FLAG_KEY='medisurg_flagged_v55';
+const SEEN_KEY='medisurg_seen_qs_v55';
+const QS_KEY_PREFIX='medisurg_qs_history_v55_';
+const CACHE_PREFIX='medisurg_q_cache_v55_';
+const ACTIVE_KEY='medisurg_active_session_v55';
 
 function curMonth(){return new Date().toISOString().slice(0,7)}
 function prevMonth(){let d=new Date();d.setMonth(d.getMonth()-1);return d.toISOString().slice(0,7)}
@@ -697,10 +697,10 @@ function shuffleOptionsFisherYates(q){
 }
 
 // ===== THEME =====
-function openS(){let th=localStorage.getItem('elite_theme_v7')||'dark';let s=$('themeSel');if(s)s.value=th;$('set').style.display='grid'}
+function openS(){let th=localStorage.getItem('medisurg_theme_v7')||'dark';let s=$('themeSel');if(s)s.value=th;$('set').style.display='grid'}
 function closeS(){$('set').style.display='none'}
-function changeTheme(v){document.documentElement.setAttribute('data-theme',v);localStorage.setItem('elite_theme_v7',v);let mm=document.getElementById('themeMeta');if(mm)mm.setAttribute('content',v==='light'?'#ffffff':'#04142f');}
-(function(){let th=localStorage.getItem('elite_theme_v7')||'dark';document.documentElement.setAttribute('data-theme',th)})();
+function changeTheme(v){document.documentElement.setAttribute('data-theme',v);localStorage.setItem('medisurg_theme_v7',v);let mm=document.getElementById('themeMeta');if(mm)mm.setAttribute('content',v==='light'?'#ffffff':'#04142f');}
+(function(){let th=localStorage.getItem('medisurg_theme_v7')||'dark';document.documentElement.setAttribute('data-theme',th)})();
 
 // ===== CALC =====
 function toggleCalc(){let c=$('calc');c.style.display=c.style.display==='block'?'none':'block'}
